@@ -8,7 +8,7 @@
 
 const USDA = (() => {
   const BASE = 'https://api.nal.usda.gov/fdc/v1';
-  const API_KEY = 'DEMO_KEY'; // replace with free key for production
+  const API_KEY = '13FVDx9fZViRNYoMHAlm4Z8OJdsVcl1912esLgZn';
 
   // Nutrient IDs in USDA FoodData Central
   const NUT = {
@@ -54,5 +54,14 @@ const USDA = (() => {
     return (data.foods || []).map(parseFood);
   }
 
-  return { search };
+  async function getFoodMeasures(fdcId) {
+    const res = await fetch(`${BASE}/food/${fdcId}?api_key=${API_KEY}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.foodMeasures || [])
+      .filter(m => m.gramWeight > 0)
+      .map(m => ({ label: m.disseminationText, grams: m.gramWeight }));
+  }
+
+  return { search, getFoodMeasures };
 })();

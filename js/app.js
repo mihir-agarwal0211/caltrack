@@ -177,7 +177,7 @@ async function doUSDASearch() {
   }
 }
 
-function selectUSDA(i) {
+async function selectUSDA(i) {
   const results = searchResultsEl._results;
   if (!results) return;
   selectedUSDA = results[i];
@@ -187,14 +187,44 @@ function selectUSDA(i) {
   document.getElementById('sel-qty').value = 100;
   document.getElementById('selected-food').style.display = 'block';
   searchResultsEl.style.display = 'none';
+
+  const servingRow = document.getElementById('serving-row');
+  const servingSel = document.getElementById('sel-serving');
+  servingRow.style.display = 'none';
+  servingSel.innerHTML = '';
+
+  try {
+    const measures = await USDA.getFoodMeasures(selectedUSDA.fdcId);
+    if (measures.length) {
+      servingSel.innerHTML =
+        '<option value="">Custom (enter grams below)</option>' +
+        measures.map(m => `<option value="${m.grams}">${m.label} (${Math.round(m.grams)}g)</option>`).join('');
+      servingRow.style.display = 'block';
+    }
+  } catch (_) {
+    // silently fall back to gram input only
+  }
 }
+
+document.getElementById('sel-serving').addEventListener('change', function () {
+  if (this.value) {
+    document.getElementById('sel-qty').value = Math.round(parseFloat(this.value));
+  }
+});
 
 document.getElementById('add-usda-btn').addEventListener('click', () => {
   if (!selectedUSDA) return;
   const qty = parseFloat(document.getElementById('sel-qty').value) || 100;
   const ratio = qty / 100;
+
+  const servingSel = document.getElementById('sel-serving');
+  const selOpt = servingSel.value ? servingSel.options[servingSel.selectedIndex] : null;
+  const displayUnit = selOpt
+    ? selOpt.text.replace(/\s*\(\d+\.?\d*g\)$/, '')
+    : `${qty}g`;
+
   addFood({
-    name:  `${selectedUSDA.name} (${qty}g)`,
+    name:  `${selectedUSDA.name} (${displayUnit})`,
     cal:   Math.round(selectedUSDA.cal  * ratio),
     pro:   r(selectedUSDA.pro  * ratio),
     fat:   r(selectedUSDA.fat  * ratio),
@@ -202,6 +232,8 @@ document.getElementById('add-usda-btn').addEventListener('click', () => {
     fibre: r((selectedUSDA.fibre || 0) * ratio),
   });
   document.getElementById('selected-food').style.display = 'none';
+  document.getElementById('serving-row').style.display = 'none';
+  servingSel.innerHTML = '';
   usdaInput.value = '';
   selectedUSDA = null;
 });
