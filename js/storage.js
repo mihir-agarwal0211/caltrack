@@ -57,6 +57,7 @@ const Storage = (() => {
       calTarget: 1500,
       proTarget: 130,
       apiKey: '',
+      usdaKey: '',
       colMap: {
         date: 'A',
         calories: 'C',

@@ -49,7 +49,8 @@ self.addEventListener('fetch', event => {
   const isAPI = url.hostname.includes('googleapis.com') ||
                 url.hostname.includes('nal.usda.gov') ||
                 url.hostname.includes('anthropic.com') ||
-                url.hostname.includes('accounts.google.com');
+                url.hostname.includes('accounts.google.com') ||
+                url.hostname.includes('openfoodfacts.org');
 
   if (isAPI) {
     // Network-first, no caching for API responses

@@ -13,7 +13,7 @@
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#0f0f0f" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="apple-mobile-web-app-title" content="CalTrack" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
@@ -139,6 +139,10 @@
               <label class="field-label" for="man-carb">Carbs</label>
               <input type="number" id="man-carb" class="input-number" placeholder="g" />
             </div>
+            <div class="field-group">
+              <label class="field-label" for="man-fibre">Fibre</label>
+              <input type="number" id="man-fibre" class="input-number" placeholder="g" />
+            </div>
           </div>
           <button class="btn-primary" id="add-manual-btn">Add to log</button>
         </div>
@@ -184,6 +188,10 @@
           <div class="field-group">
             <label class="field-label" for="r-carb">Carbs</label>
             <input type="number" id="r-carb" class="input-number" placeholder="g" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="r-fibre">Fibre</label>
+            <input type="number" id="r-fibre" class="input-number" placeholder="g" />
           </div>
         </div>
         <button class="btn-primary" id="save-recipe-btn">Save recipe</button>
@@ -270,6 +278,15 @@
             <label class="field-label" for="cfg-pro-target">Protein target (g)</label>
             <input type="number" id="cfg-pro-target" class="input-number" placeholder="130" />
           </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">USDA API <span class="badge-optional">optional</span></h2>
+        <div class="field-group">
+          <label class="field-label" for="cfg-usda-key">USDA FoodData Central API key</label>
+          <input type="text" id="cfg-usda-key" class="input-text" placeholder="Leave blank to use built-in key" />
+          <p class="hint">Get a free key at <a href="https://fdc.nal.usda.gov/api-guide.html" target="_blank" rel="noopener">fdc.nal.usda.gov</a> for higher rate limits. Leave blank to use the default key.</p>
         </div>
       </div>
 

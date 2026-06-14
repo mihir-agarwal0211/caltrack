@@ -143,13 +143,13 @@ let searchDebounce;
 usdaInput.addEventListener('input', () => {
   clearTimeout(searchDebounce);
   if (usdaInput.value.trim().length > 2) {
-    searchDebounce = setTimeout(doUSDASearch, 600);
+    searchDebounce = setTimeout(() => doUSDASearch({ allowOFF: false }), 600);
   } else {
     searchResultsEl.style.display = 'none';
   }
 });
 
-async function doUSDASearch() {
+async function doUSDASearch({ allowOFF = true } = {}) {
   const q = usdaInput.value.trim();
   if (!q) return;
   setStatus('usda-status', 'Searching USDA database…', 'info');
@@ -161,14 +161,16 @@ async function doUSDASearch() {
     let results = await USDA.search(q);
     let fromOFF = false;
 
-    if (!results.length) {
+    if (!results.length && allowOFF) {
       setStatus('usda-status', 'No USDA results — trying Open Food Facts…', 'info');
       results = await USDA.searchOFF(q);
       fromOFF = true;
     }
 
     if (!results.length) {
-      setStatus('usda-status', 'No results found. Try a different term or use manual entry.', 'error');
+      setStatus('usda-status', allowOFF
+        ? 'No results found. Try a different term or use manual entry.'
+        : 'No USDA results. Press Search to also check Open Food Facts.', 'error');
       return;
     }
 
@@ -293,7 +295,7 @@ document.getElementById('add-recipe-btn').addEventListener('click', () => {
     pro:   r(rec.pro_per  * ratio),
     fat:   r(rec.fat_per  * ratio),
     carb:  r(rec.carb_per * ratio),
-    fibre: 0,
+    fibre: r((rec.fibre_per || 0) * ratio),
   });
   document.getElementById('recipe-pick').value = '';
   document.getElementById('recipe-pick-meta').textContent = '';
@@ -311,12 +313,12 @@ document.getElementById('add-manual-btn').addEventListener('click', () => {
   addFood({
     name,
     cal,
-    pro:   parseFloat(document.getElementById('man-pro').value)  || 0,
-    fat:   parseFloat(document.getElementById('man-fat').value)  || 0,
-    carb:  parseFloat(document.getElementById('man-carb').value) || 0,
-    fibre: 0,
+    pro:   parseFloat(document.getElementById('man-pro').value)   || 0,
+    fat:   parseFloat(document.getElementById('man-fat').value)   || 0,
+    carb:  parseFloat(document.getElementById('man-carb').value)  || 0,
+    fibre: parseFloat(document.getElementById('man-fibre').value) || 0,
   });
-  ['man-name','man-cal','man-pro','man-fat','man-carb'].forEach(id => {
+  ['man-name','man-cal','man-pro','man-fat','man-carb','man-fibre'].forEach(id => {
     document.getElementById(id).value = '';
   });
 });
@@ -369,12 +371,13 @@ document.getElementById('nlp-parse-btn').addEventListener('click', async () => {
 
 // ── Recipes tab ───────────────────────────────────────
 document.getElementById('save-recipe-btn').addEventListener('click', () => {
-  const name = document.getElementById('r-name').value.trim();
-  const per  = parseFloat(document.getElementById('r-per').value)  || 100;
-  const cal  = parseFloat(document.getElementById('r-cal').value);
-  const pro  = parseFloat(document.getElementById('r-pro').value)  || 0;
-  const fat  = parseFloat(document.getElementById('r-fat').value)  || 0;
-  const carb = parseFloat(document.getElementById('r-carb').value) || 0;
+  const name  = document.getElementById('r-name').value.trim();
+  const per   = parseFloat(document.getElementById('r-per').value)   || 100;
+  const cal   = parseFloat(document.getElementById('r-cal').value);
+  const pro   = parseFloat(document.getElementById('r-pro').value)   || 0;
+  const fat   = parseFloat(document.getElementById('r-fat').value)   || 0;
+  const carb  = parseFloat(document.getElementById('r-carb').value)  || 0;
+  const fibre = parseFloat(document.getElementById('r-fibre').value) || 0;
 
   if (!name || !cal) {
     setStatus('recipe-status', 'Name and calories are required.', 'error');
@@ -382,12 +385,12 @@ document.getElementById('save-recipe-btn').addEventListener('click', () => {
   }
 
   const recipes = Storage.getRecipes();
-  recipes[name] = { per, cal_per: cal, pro_per: pro, fat_per: fat, carb_per: carb };
+  recipes[name] = { per, cal_per: cal, pro_per: pro, fat_per: fat, carb_per: carb, fibre_per: fibre };
   Storage.setRecipes(recipes);
   populateRecipePicker();
   renderRecipeList();
   setStatus('recipe-status', `Saved "${name}".`, 'success');
-  ['r-name','r-per','r-cal','r-pro','r-fat','r-carb'].forEach(id => document.getElementById(id).value = '');
+  ['r-name','r-per','r-cal','r-pro','r-fat','r-carb','r-fibre'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('r-per').value = 100;
 });
 
@@ -405,7 +408,7 @@ function renderRecipeList() {
       <div class="recipe-item">
         <div>
           <div class="recipe-item-name">${k}</div>
-          <div class="recipe-item-macros">${rec.cal_per} kcal · ${rec.pro_per}g P · ${rec.fat_per}g F · ${rec.carb_per}g C per ${rec.per}g</div>
+          <div class="recipe-item-macros">${rec.cal_per} kcal · ${rec.pro_per}g P · ${rec.fat_per}g F · ${rec.carb_per}g C${rec.fibre_per ? ` · ${rec.fibre_per}g fibre` : ''} per ${rec.per}g</div>
         </div>
         <button class="food-entry-remove" onclick="deleteRecipe('${k.replace(/'/g, "\\'")}')" aria-label="Delete ${k}">×</button>
       </div>`;
@@ -520,6 +523,7 @@ function loadSettingsUI() {
   document.getElementById('cfg-cal-target').value  = s.calTarget  || 1500;
   document.getElementById('cfg-pro-target').value  = s.proTarget  || 130;
   document.getElementById('cfg-api-key').value     = s.apiKey     || '';
+  document.getElementById('cfg-usda-key').value    = s.usdaKey    || '';
 
   // Show AI tab if API key is set
   document.getElementById('nlp-tab').style.display = s.apiKey ? 'block' : 'none';
@@ -546,6 +550,7 @@ document.getElementById('save-settings-btn').addEventListener('click', () => {
     calTarget: parseInt(document.getElementById('cfg-cal-target').value) || 1500,
     proTarget: parseInt(document.getElementById('cfg-pro-target').value) || 130,
     apiKey:    document.getElementById('cfg-api-key').value.trim(),
+    usdaKey:   document.getElementById('cfg-usda-key').value.trim(),
   };
   Storage.setSettings(settings);
   document.getElementById('nlp-tab').style.display = settings.apiKey ? 'block' : 'none';

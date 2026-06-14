@@ -2,13 +2,15 @@
  * usda.js
  * Wraps the USDA FoodData Central search API.
  * Uses SR Legacy + Foundation datasets for accuracy.
- * API key: DEMO_KEY works for low usage (~1000 req/day per IP).
- * For higher usage, get a free key at https://fdc.nal.usda.gov/api-guide.html
  */
 
 const USDA = (() => {
   const BASE = 'https://api.nal.usda.gov/fdc/v1';
-  const API_KEY = '13FVDx9fZViRNYoMHAlm4Z8OJdsVcl1912esLgZn';
+  const DEFAULT_KEY = '13FVDx9fZViRNYoMHAlm4Z8OJdsVcl1912esLgZn';
+
+  function getKey() {
+    try { return Storage.getSettings().usdaKey || DEFAULT_KEY; } catch (_) { return DEFAULT_KEY; }
+  }
 
   // Nutrient IDs in USDA FoodData Central
   const NUT = {
@@ -46,7 +48,7 @@ const USDA = (() => {
       query,
       pageSize,
       dataType: 'SR Legacy,Foundation',
-      api_key: API_KEY,
+      api_key: getKey(),
     });
     const res = await fetch(`${BASE}/foods/search?${params}`);
     if (!res.ok) throw new Error(`USDA API error ${res.status}`);
@@ -55,7 +57,7 @@ const USDA = (() => {
   }
 
   async function getFoodMeasures(fdcId) {
-    const res = await fetch(`${BASE}/food/${fdcId}?api_key=${API_KEY}`);
+    const res = await fetch(`${BASE}/food/${fdcId}?api_key=${getKey()}`);
     if (!res.ok) return [];
     const data = await res.json();
     return (data.foodMeasures || [])
@@ -70,7 +72,9 @@ const USDA = (() => {
       page_size: pageSize,
       fields: 'id,product_name,brands,nutriments,serving_size,serving_quantity',
     });
-    const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?${params}`);
+    const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?${params}`, {
+      headers: { 'User-Agent': 'CalTrack/1.0 (mihiragarwal.com)' },
+    });
     if (!res.ok) throw new Error(`Open Food Facts API error ${res.status}`);
     const data = await res.json();
     return (data.products || [])
