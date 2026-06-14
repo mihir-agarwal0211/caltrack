@@ -158,12 +158,22 @@ async function doUSDASearch() {
   selectedUSDA = null;
 
   try {
-    const results = await USDA.search(q);
-    setStatus('usda-status', '');
+    let results = await USDA.search(q);
+    let fromOFF = false;
+
     if (!results.length) {
-      setStatus('usda-status', 'No results. Try a simpler term or use manual entry.', 'error');
+      setStatus('usda-status', 'No USDA results — trying Open Food Facts…', 'info');
+      results = await USDA.searchOFF(q);
+      fromOFF = true;
+    }
+
+    if (!results.length) {
+      setStatus('usda-status', 'No results found. Try a different term or use manual entry.', 'error');
       return;
     }
+
+    setStatus('usda-status', fromOFF ? 'Showing results from Open Food Facts (no USDA match).' : '', fromOFF ? 'info' : '');
+
     searchResultsEl.innerHTML = results.map((f, i) => `
       <div class="search-result-item" onclick="selectUSDA(${i})" data-idx="${i}">
         <div class="result-name">${f.name}</div>
@@ -173,7 +183,7 @@ async function doUSDASearch() {
     searchResultsEl._results = results;
     searchResultsEl.style.display = 'block';
   } catch (e) {
-    setStatus('usda-status', 'USDA lookup failed. Check your connection or use manual entry.', 'error');
+    setStatus('usda-status', 'Search failed. Check your connection or use manual entry.', 'error');
   }
 }
 
@@ -193,16 +203,23 @@ async function selectUSDA(i) {
   servingRow.style.display = 'none';
   servingSel.innerHTML = '';
 
-  try {
-    const measures = await USDA.getFoodMeasures(selectedUSDA.fdcId);
-    if (measures.length) {
-      servingSel.innerHTML =
-        '<option value="">Custom (enter grams below)</option>' +
-        measures.map(m => `<option value="${m.grams}">${m.label} (${Math.round(m.grams)}g)</option>`).join('');
-      servingRow.style.display = 'block';
+  if (selectedUSDA.fdcId) {
+    try {
+      const measures = await USDA.getFoodMeasures(selectedUSDA.fdcId);
+      if (measures.length) {
+        servingSel.innerHTML =
+          '<option value="">Custom (enter grams below)</option>' +
+          measures.map(m => `<option value="${m.grams}">${m.label} (${Math.round(m.grams)}g)</option>`).join('');
+        servingRow.style.display = 'block';
+      }
+    } catch (_) {
+      // silently fall back to gram input only
     }
-  } catch (_) {
-    // silently fall back to gram input only
+  } else if (selectedUSDA.servingLabel && selectedUSDA.servingGrams) {
+    servingSel.innerHTML =
+      '<option value="">Custom (enter grams below)</option>' +
+      `<option value="${selectedUSDA.servingGrams}">${selectedUSDA.servingLabel} (${Math.round(selectedUSDA.servingGrams)}g)</option>`;
+    servingRow.style.display = 'block';
   }
 }
 

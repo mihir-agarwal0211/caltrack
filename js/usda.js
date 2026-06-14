@@ -63,5 +63,38 @@ const USDA = (() => {
       .map(m => ({ label: m.disseminationText, grams: m.gramWeight }));
   }
 
-  return { search, getFoodMeasures };
+  async function searchOFF(query, pageSize = 7) {
+    const params = new URLSearchParams({
+      search_terms: query,
+      json: 1,
+      page_size: pageSize,
+      fields: 'id,product_name,brands,nutriments,serving_size,serving_quantity',
+    });
+    const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?${params}`);
+    if (!res.ok) throw new Error(`Open Food Facts API error ${res.status}`);
+    const data = await res.json();
+    return (data.products || [])
+      .filter(p => p.product_name && p.nutriments?.['energy-kcal_100g'] != null)
+      .slice(0, pageSize)
+      .map(p => {
+        const n = p.nutriments;
+        const name = p.brands ? `${p.product_name} — ${p.brands}` : p.product_name;
+        const servingGrams = parseFloat(p.serving_quantity) || null;
+        return {
+          fdcId: null,
+          name,
+          cal:   Math.round(n['energy-kcal_100g'] || 0),
+          pro:   Math.round((n['proteins_100g']       || 0) * 10) / 10,
+          fat:   Math.round((n['fat_100g']             || 0) * 10) / 10,
+          carb:  Math.round((n['carbohydrates_100g']   || 0) * 10) / 10,
+          fibre: Math.round((n['fiber_100g']           || 0) * 10) / 10,
+          per:   100,
+          source: 'off',
+          servingLabel: p.serving_size || null,
+          servingGrams,
+        };
+      });
+  }
+
+  return { search, getFoodMeasures, searchOFF };
 })();
