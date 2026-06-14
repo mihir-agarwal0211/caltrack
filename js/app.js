@@ -9,6 +9,7 @@ let currentDate = todayISO();
 let foods = [];
 let toggles = { weights: false, cardio: false };
 let selectedUSDA = null;
+let searchDB = 'usda';
 
 // ── Helpers ──────────────────────────────────────────
 function todayISO() {
@@ -139,10 +140,22 @@ const searchResultsEl = document.getElementById('search-results');
 document.getElementById('usda-search-btn').addEventListener('click', doUSDASearch);
 usdaInput.addEventListener('keydown', e => { if (e.key === 'Enter') doUSDASearch(); });
 
+document.querySelectorAll('.db-toggle').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.db-toggle').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    searchDB = btn.dataset.db;
+    searchResultsEl.style.display = 'none';
+    document.getElementById('selected-food').style.display = 'none';
+    setStatus('usda-status', '', '');
+    selectedUSDA = null;
+  });
+});
+
 let searchDebounce;
 usdaInput.addEventListener('input', () => {
   clearTimeout(searchDebounce);
-  if (usdaInput.value.trim().length > 2) {
+  if (usdaInput.value.trim().length > 2 && searchDB === 'usda') {
     searchDebounce = setTimeout(() => doUSDASearch({ allowOFF: false }), 600);
   } else {
     searchResultsEl.style.display = 'none';
@@ -152,29 +165,38 @@ usdaInput.addEventListener('input', () => {
 async function doUSDASearch({ allowOFF = true } = {}) {
   const q = usdaInput.value.trim();
   if (!q) return;
-  setStatus('usda-status', 'Searching USDA database…', 'info');
   searchResultsEl.style.display = 'none';
   document.getElementById('selected-food').style.display = 'none';
   selectedUSDA = null;
 
   try {
-    let results = await USDA.search(q);
+    let results = [];
     let fromOFF = false;
 
-    if (!results.length && allowOFF) {
-      setStatus('usda-status', 'No USDA results — trying Open Food Facts…', 'info');
+    if (searchDB === 'off') {
+      setStatus('usda-status', 'Searching Open Food Facts…', 'info');
       results = await USDA.searchOFF(q);
       fromOFF = true;
+    } else {
+      setStatus('usda-status', 'Searching USDA database…', 'info');
+      results = await USDA.search(q);
+      if (!results.length && allowOFF) {
+        setStatus('usda-status', 'No USDA results — trying Open Food Facts…', 'info');
+        results = await USDA.searchOFF(q);
+        fromOFF = true;
+      }
     }
 
     if (!results.length) {
-      setStatus('usda-status', allowOFF
-        ? 'No results found. Try a different term or use manual entry.'
-        : 'No USDA results. Press Search to also check Open Food Facts.', 'error');
+      setStatus('usda-status', searchDB === 'off'
+        ? 'No Open Food Facts results. Try USDA or use manual entry.'
+        : allowOFF
+          ? 'No results found. Try switching to Open Food Facts above.'
+          : 'No USDA results. Press Search to also check Open Food Facts.', 'error');
       return;
     }
 
-    setStatus('usda-status', fromOFF ? 'Showing results from Open Food Facts (no USDA match).' : '', fromOFF ? 'info' : '');
+    setStatus('usda-status', fromOFF && searchDB !== 'off' ? 'Showing results from Open Food Facts (no USDA match).' : '', fromOFF && searchDB !== 'off' ? 'info' : '');
 
     searchResultsEl.innerHTML = results.map((f, i) => `
       <div class="search-result-item" onclick="selectUSDA(${i})" data-idx="${i}">

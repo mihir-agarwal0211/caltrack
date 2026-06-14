@@ -503,6 +503,27 @@ select option { background: var(--bg-card); }
 
 .toggle-row { display: flex; gap: 8px; margin-top: 4px; }
 
+.db-toggle-row { display: flex; gap: 8px; margin-bottom: 10px; }
+
+.db-toggle {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.db-toggle.active {
+  background: var(--accent-dim);
+  border-color: rgba(181,245,66,0.4);
+  color: var(--accent);
+}
+
 .toggle-btn {
   background: var(--bg-input);
   border: 1px solid var(--border);
