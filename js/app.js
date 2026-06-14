@@ -10,6 +10,8 @@ let foods = [];
 let toggles = { weights: false, cardio: false };
 let selectedUSDA = null;
 let searchDB = 'usda';
+let selectedServingGrams = null;
+let selectedServingLabel = null;
 
 // ── Helpers ──────────────────────────────────────────
 function todayISO() {
@@ -218,7 +220,10 @@ async function selectUSDA(i) {
   document.getElementById('sel-name').textContent = selectedUSDA.name;
   document.getElementById('sel-meta').textContent =
     `${selectedUSDA.cal} kcal · ${selectedUSDA.pro}g P · ${selectedUSDA.fat}g F · ${selectedUSDA.carb}g C per 100g`;
+  selectedServingGrams = null;
+  selectedServingLabel = null;
   document.getElementById('sel-qty').value = 100;
+  document.getElementById('sel-qty-unit').textContent = 'g';
   document.getElementById('selected-food').style.display = 'block';
   searchResultsEl.style.display = 'none';
 
@@ -249,21 +254,32 @@ async function selectUSDA(i) {
 
 document.getElementById('sel-serving').addEventListener('change', function () {
   if (this.value) {
-    document.getElementById('sel-qty').value = Math.round(parseFloat(this.value));
+    selectedServingGrams = parseFloat(this.value);
+    selectedServingLabel = this.options[this.selectedIndex].text.replace(/\s*\(\d+\.?\d*g\)$/, '');
+    document.getElementById('sel-qty').value = 1;
+    document.getElementById('sel-qty-unit').textContent = selectedServingLabel;
+  } else {
+    selectedServingGrams = null;
+    selectedServingLabel = null;
+    document.getElementById('sel-qty').value = 100;
+    document.getElementById('sel-qty-unit').textContent = 'g';
   }
 });
 
 document.getElementById('add-usda-btn').addEventListener('click', () => {
   if (!selectedUSDA) return;
-  const qty = parseFloat(document.getElementById('sel-qty').value) || 100;
-  const ratio = qty / 100;
+  const count = parseFloat(document.getElementById('sel-qty').value) || 1;
 
-  const servingSel = document.getElementById('sel-serving');
-  const selOpt = servingSel.value ? servingSel.options[servingSel.selectedIndex] : null;
-  const displayUnit = selOpt
-    ? selOpt.text.replace(/\s*\(\d+\.?\d*g\)$/, '')
-    : `${qty}g`;
+  let grams, displayUnit;
+  if (selectedServingGrams) {
+    grams = count * selectedServingGrams;
+    displayUnit = count === 1 ? selectedServingLabel : `${count} × ${selectedServingLabel}`;
+  } else {
+    grams = count;
+    displayUnit = `${count}g`;
+  }
 
+  const ratio = grams / 100;
   addFood({
     name:  `${selectedUSDA.name} (${displayUnit})`,
     cal:   Math.round(selectedUSDA.cal  * ratio),
@@ -272,9 +288,13 @@ document.getElementById('add-usda-btn').addEventListener('click', () => {
     carb:  r(selectedUSDA.carb * ratio),
     fibre: r((selectedUSDA.fibre || 0) * ratio),
   });
+
   document.getElementById('selected-food').style.display = 'none';
   document.getElementById('serving-row').style.display = 'none';
-  servingSel.innerHTML = '';
+  document.getElementById('sel-serving').innerHTML = '';
+  document.getElementById('sel-qty-unit').textContent = 'g';
+  selectedServingGrams = null;
+  selectedServingLabel = null;
   usdaInput.value = '';
   selectedUSDA = null;
 });
