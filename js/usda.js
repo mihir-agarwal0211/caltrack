@@ -68,11 +68,10 @@ const USDA = (() => {
   async function searchOFF(query, pageSize = 7) {
     const params = new URLSearchParams({
       search_terms: query,
-      json: 1,
       page_size: pageSize,
-      fields: 'id,product_name,brands,nutriments,serving_size,serving_quantity',
+      fields: 'id,product_name,brands,nutriments,serving_quantity',
     });
-    const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?${params}`, {
+    const res = await fetch(`https://world.openfoodfacts.org/api/v2/search?${params}`, {
       headers: { 'User-Agent': 'CalTrack/1.0 (mihiragarwal.com)' },
     });
     if (!res.ok) throw new Error(`Open Food Facts API error ${res.status}`);
@@ -94,7 +93,7 @@ const USDA = (() => {
           fibre: Math.round((n['fiber_100g']           || 0) * 10) / 10,
           per:   100,
           source: 'off',
-          servingLabel: p.serving_size || null,
+          servingLabel: servingGrams ? `1 serving` : null,
           servingGrams,
         };
       });
