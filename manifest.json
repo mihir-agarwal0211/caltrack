@@ -1,0 +1,40 @@
+{
+  "name": "CalTrack",
+  "short_name": "CalTrack",
+  "description": "Daily nutrition logger with USDA food search and Google Sheets sync",
+  "start_url": "/caltrack/",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0f0f0f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Log food",
+      "short_name": "Log",
+      "description": "Jump straight to today's food log",
+      "url": "/caltrack/?tab=log",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Sync to sheet",
+      "short_name": "Sync",
+      "description": "Sync today's data to Google Sheets",
+      "url": "/caltrack/?tab=sync",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

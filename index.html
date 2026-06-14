@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CalTrack — Daily Nutrition Logger</title>
+  <meta name="description" content="A self-hosted nutrition tracker. Log food via USDA database, manage personal recipes, and sync daily data to Google Sheets." />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0f0f0f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="CalTrack" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-mark">CT</span>
+        <span class="brand-name">CalTrack</span>
+      </div>
+      <nav class="tab-nav" role="tablist">
+        <button class="tab-btn active" data-tab="log" role="tab" aria-selected="true">Log</button>
+        <button class="tab-btn" data-tab="recipes" role="tab" aria-selected="false">Recipes</button>
+        <button class="tab-btn" data-tab="sync" role="tab" aria-selected="false">Sync</button>
+        <button class="tab-btn" data-tab="settings" role="tab" aria-selected="false">Settings</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="app-main">
+
+    <!-- LOG TAB -->
+    <section id="tab-log" class="tab-panel active" role="tabpanel">
+
+      <div class="date-bar">
+        <label class="field-label" for="log-date">Date</label>
+        <input type="date" id="log-date" class="input-date" />
+      </div>
+
+      <div class="macro-summary" id="macro-summary">
+        <div class="macro-card">
+          <span class="macro-val" id="sum-cal">0</span>
+          <span class="macro-label">kcal</span>
+          <span class="macro-diff" id="diff-cal"></span>
+        </div>
+        <div class="macro-card">
+          <span class="macro-val" id="sum-pro">0</span>
+          <span class="macro-label">protein g</span>
+          <span class="macro-diff" id="diff-pro"></span>
+        </div>
+        <div class="macro-card">
+          <span class="macro-val" id="sum-fat">0</span>
+          <span class="macro-label">fats g</span>
+        </div>
+        <div class="macro-card">
+          <span class="macro-val" id="sum-carb">0</span>
+          <span class="macro-label">carbs g</span>
+        </div>
+      </div>
+
+      <div class="food-log" id="food-log">
+        <p class="empty-state">Nothing logged yet. Add food below.</p>
+      </div>
+
+      <div class="add-section">
+        <div class="add-tabs">
+          <button class="add-tab active" data-add="search">USDA search</button>
+          <button class="add-tab" data-add="recipe">My recipes</button>
+          <button class="add-tab" data-add="manual">Manual</button>
+          <button class="add-tab" data-add="nlp" id="nlp-tab" style="display:none">AI parse</button>
+        </div>
+
+        <!-- USDA SEARCH -->
+        <div class="add-panel active" id="add-search">
+          <div class="search-row">
+            <input type="text" id="usda-query" class="input-text" placeholder="e.g. chicken breast, rolled oats, whole egg" />
+            <button class="btn-primary" id="usda-search-btn">Search</button>
+          </div>
+          <div class="search-results" id="search-results"></div>
+          <div class="selected-food" id="selected-food" style="display:none">
+            <div class="selected-name" id="sel-name"></div>
+            <div class="selected-meta" id="sel-meta"></div>
+            <div class="qty-row">
+              <input type="number" id="sel-qty" class="input-number" value="100" min="1" />
+              <span class="qty-unit">g</span>
+              <button class="btn-primary" id="add-usda-btn">Add to log</button>
+            </div>
+          </div>
+          <p id="usda-status" class="status-msg"></p>
+        </div>
+
+        <!-- RECIPE PICK -->
+        <div class="add-panel" id="add-recipe">
+          <div class="search-row">
+            <select id="recipe-pick" class="input-select">
+              <option value="">— pick a saved recipe —</option>
+            </select>
+          </div>
+          <div id="recipe-pick-meta" class="selected-meta" style="margin-top:8px"></div>
+          <div class="qty-row" id="recipe-qty-row" style="display:none">
+            <input type="number" id="recipe-qty" class="input-number" value="100" min="1" />
+            <span class="qty-unit">g</span>
+            <button class="btn-primary" id="add-recipe-btn">Add to log</button>
+          </div>
+        </div>
+
+        <!-- MANUAL -->
+        <div class="add-panel" id="add-manual">
+          <div class="manual-grid">
+            <div class="field-group full">
+              <label class="field-label" for="man-name">Food name</label>
+              <input type="text" id="man-name" class="input-text" placeholder="e.g. Chole sabji (200g)" />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="man-cal">Calories</label>
+              <input type="number" id="man-cal" class="input-number" placeholder="kcal" />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="man-pro">Protein</label>
+              <input type="number" id="man-pro" class="input-number" placeholder="g" />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="man-fat">Fat</label>
+              <input type="number" id="man-fat" class="input-number" placeholder="g" />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="man-carb">Carbs</label>
+              <input type="number" id="man-carb" class="input-number" placeholder="g" />
+            </div>
+          </div>
+          <button class="btn-primary" id="add-manual-btn">Add to log</button>
+        </div>
+
+        <!-- AI PARSE -->
+        <div class="add-panel" id="add-nlp">
+          <textarea id="nlp-input" class="input-textarea" placeholder="Describe your meal: e.g. 2 scrambled eggs, a bowl of oats with 30g whey, black coffee"></textarea>
+          <button class="btn-primary" id="nlp-parse-btn">Parse with AI</button>
+          <p class="hint">Uses your Anthropic API key. Macros sourced from USDA where possible.</p>
+          <p id="nlp-status" class="status-msg"></p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- RECIPES TAB -->
+    <section id="tab-recipes" class="tab-panel" role="tabpanel">
+      <p class="section-desc">Save dishes with known macros per 100g. These persist locally and are available instantly — no API calls.</p>
+
+      <div class="recipe-form card">
+        <h2 class="card-title">Add a recipe</h2>
+        <div class="manual-grid">
+          <div class="field-group full">
+            <label class="field-label" for="r-name">Recipe name</label>
+            <input type="text" id="r-name" class="input-text" placeholder="e.g. Chole sabji" />
+          </div>
+          <div class="field-group full">
+            <label class="field-label" for="r-per">Macros are per how many grams?</label>
+            <input type="number" id="r-per" class="input-number" placeholder="100" value="100" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="r-cal">Calories</label>
+            <input type="number" id="r-cal" class="input-number" placeholder="kcal" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="r-pro">Protein</label>
+            <input type="number" id="r-pro" class="input-number" placeholder="g" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="r-fat">Fat</label>
+            <input type="number" id="r-fat" class="input-number" placeholder="g" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="r-carb">Carbs</label>
+            <input type="number" id="r-carb" class="input-number" placeholder="g" />
+          </div>
+        </div>
+        <button class="btn-primary" id="save-recipe-btn">Save recipe</button>
+        <p id="recipe-status" class="status-msg"></p>
+      </div>
+
+      <div id="recipe-list" class="recipe-list"></div>
+    </section>
+
+    <!-- SYNC TAB -->
+    <section id="tab-sync" class="tab-panel" role="tabpanel">
+      <p class="section-desc">Log additional data for the day and push everything to your Google Sheet.</p>
+
+      <div class="sync-form card">
+        <div class="sync-grid">
+          <div class="field-group">
+            <label class="field-label" for="sync-weight">Body weight (kg)</label>
+            <input type="number" id="sync-weight" class="input-number" placeholder="83.9" step="0.1" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="sync-sleep">Sleep (hrs)</label>
+            <input type="number" id="sync-sleep" class="input-number" placeholder="7.5" step="0.25" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="sync-steps">Steps</label>
+            <input type="number" id="sync-steps" class="input-number" placeholder="8000" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="sync-water">Water (L)</label>
+            <input type="number" id="sync-water" class="input-number" placeholder="2.5" step="0.25" />
+          </div>
+        </div>
+
+        <div class="field-group" style="margin-top:1rem">
+          <label class="field-label">Activity</label>
+          <div class="toggle-row">
+            <button class="toggle-btn" id="tog-weights" data-key="weights">Weights</button>
+            <button class="toggle-btn" id="tog-cardio" data-key="cardio">Cardio</button>
+          </div>
+        </div>
+
+        <div class="sync-summary card-inner" id="sync-summary"></div>
+
+        <button class="btn-primary btn-sync" id="sync-btn">Sync to Google Sheet</button>
+        <p id="sync-status" class="status-msg"></p>
+      </div>
+    </section>
+
+    <!-- SETTINGS TAB -->
+    <section id="tab-settings" class="tab-panel" role="tabpanel">
+      <p class="section-desc">All config is stored in your browser. Nothing is sent to any server except your own Google Sheet.</p>
+
+      <div class="card">
+        <h2 class="card-title">Google Sheets</h2>
+        <div class="field-group">
+          <label class="field-label" for="cfg-sheet-id">Spreadsheet ID</label>
+          <input type="text" id="cfg-sheet-id" class="input-text" placeholder="From your Sheet URL: /spreadsheets/d/[ID]/edit" />
+          <p class="hint">Open your Google Sheet → copy the long ID from the URL.</p>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="cfg-sheet-name">Sheet tab name</label>
+          <input type="text" id="cfg-sheet-name" class="input-text" placeholder="Daily Tracker" />
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="cfg-client-id">Google OAuth Client ID</label>
+          <input type="text" id="cfg-client-id" class="input-text" placeholder="xxxxxx.apps.googleusercontent.com" />
+          <p class="hint">Create one at <a href="https://console.cloud.google.com" target="_blank" rel="noopener">console.cloud.google.com</a> → APIs & Services → Credentials → OAuth 2.0 Client ID (Web application). Add your site URL to Authorized JavaScript origins.</p>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="cfg-header-row">Header row number</label>
+          <input type="number" id="cfg-header-row" class="input-number" value="2" min="1" />
+          <p class="hint">Row where column names (Date, Calories, etc.) live. Data starts the next row.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Targets</h2>
+        <div class="manual-grid">
+          <div class="field-group">
+            <label class="field-label" for="cfg-cal-target">Calorie target</label>
+            <input type="number" id="cfg-cal-target" class="input-number" placeholder="1500" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="cfg-pro-target">Protein target (g)</label>
+            <input type="number" id="cfg-pro-target" class="input-number" placeholder="130" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="ai-card">
+        <h2 class="card-title">AI food parsing <span class="badge-optional">optional</span></h2>
+        <div class="field-group">
+          <label class="field-label" for="cfg-api-key">Anthropic API key</label>
+          <input type="password" id="cfg-api-key" class="input-text" placeholder="sk-ant-..." />
+          <p class="hint">Get one at <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>. Stored only in your browser. Enables the "AI parse" tab for natural language food entry.</p>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="save-settings-btn">Save settings</button>
+      <p id="settings-status" class="status-msg"></p>
+
+      <div class="card" style="margin-top:1.5rem">
+        <h2 class="card-title">Column mapping</h2>
+        <p class="hint" style="margin-bottom:1rem">Map your sheet's columns. Leave blank to skip that field.</p>
+        <div class="col-map-grid" id="col-map-grid"></div>
+        <button class="btn-secondary" id="save-colmap-btn" style="margin-top:1rem">Save column map</button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="js/storage.js"></script>
+  <script src="js/usda.js"></script>
+  <script src="js/sheets.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/caltrack/service-worker.js')
+          .catch(err => console.warn('SW registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>
