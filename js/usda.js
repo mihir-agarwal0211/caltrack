@@ -85,6 +85,7 @@ const USDA = (() => {
           : null;
         return {
           fdcId: null,
+          code: p.code,
           name,
           cal:   Math.round(n['energy-kcal_100g'] || 0),
           pro:   Math.round((n['proteins_100g']       || 0) * 10) / 10,
@@ -99,5 +100,19 @@ const USDA = (() => {
       });
   }
 
-  return { search, getFoodMeasures, searchOFF };
+  async function getOFFMeasures(code) {
+    const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const p = data.product;
+    if (!p) return [];
+    const grams = parseFloat(p.serving_quantity);
+    if (!grams) return [];
+    const label = p.serving_size
+      ? p.serving_size.replace(/\s*\([\d.]+\s*g\)/i, '').trim()
+      : '1 serving';
+    return [{ label, grams }];
+  }
+
+  return { search, getFoodMeasures, searchOFF, getOFFMeasures };
 })();

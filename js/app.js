@@ -244,11 +244,18 @@ async function selectUSDA(i) {
     } catch (_) {
       // silently fall back to gram input only
     }
-  } else if (selectedUSDA.servingLabel && selectedUSDA.servingGrams) {
-    servingSel.innerHTML =
-      '<option value="">Custom (enter grams below)</option>' +
-      `<option value="${selectedUSDA.servingGrams}">${selectedUSDA.servingLabel} (${Math.round(selectedUSDA.servingGrams)}g)</option>`;
-    servingRow.style.display = 'block';
+  } else if (selectedUSDA.code) {
+    try {
+      const measures = await USDA.getOFFMeasures(selectedUSDA.code);
+      if (measures.length) {
+        servingSel.innerHTML =
+          '<option value="">Custom (enter grams below)</option>' +
+          measures.map(m => `<option value="${m.grams}">${m.label} (${Math.round(m.grams)}g)</option>`).join('');
+        servingRow.style.display = 'block';
+      }
+    } catch (_) {
+      // silently fall back to gram input only
+    }
   }
 }
 
