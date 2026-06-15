@@ -45,12 +45,14 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Always go to network for API calls
+  // Let OFF requests bypass the SW entirely — SW re-fetching breaks their CORS headers
+  if (url.hostname.includes('openfoodfacts.org')) return;
+
+  // Always go to network for other API calls
   const isAPI = url.hostname.includes('googleapis.com') ||
                 url.hostname.includes('nal.usda.gov') ||
                 url.hostname.includes('anthropic.com') ||
-                url.hostname.includes('accounts.google.com') ||
-                url.hostname.includes('openfoodfacts.org');
+                url.hostname.includes('accounts.google.com');
 
   if (isAPI) {
     // Network-first, no caching for API responses
