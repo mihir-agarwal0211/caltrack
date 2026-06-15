@@ -67,14 +67,16 @@ const USDA = (() => {
 
   async function searchOFF(query, pageSize = 7) {
     const params = new URLSearchParams({
-      q: query,
-      sort_by: 'unique_scans_n',
+      search_terms: query,
+      search_simple: 1,
+      action: 'process',
+      json: 1,
       page_size: pageSize,
     });
-    const res = await fetch(`https://api.mihiragarwal.com/off/search?${params}`);
+    const res = await fetch(`https://api.mihiragarwal.com/off/cgi/search.pl?${params}`);
     if (!res.ok) throw new Error(`Open Food Facts API error ${res.status}`);
     const data = await res.json();
-    return (data.hits || [])
+    return (data.products || [])
       .filter(p => p.product_name && p.nutriments?.['energy-kcal_100g'] != null)
       .slice(0, pageSize)
       .map(p => {
