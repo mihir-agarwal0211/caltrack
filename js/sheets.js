@@ -80,7 +80,9 @@ const Sheets = (() => {
     return null;
   }
 
-  async function syncDay(dateStr, data) {
+  const ADDABLE = new Set(['calories', 'protein', 'fats', 'carbs', 'fibre']);
+
+  async function syncDay(dateStr, data, mode = 'replace') {
     const settings = Storage.getSettings();
     if (!settings.clientId) throw new Error('No Google OAuth Client ID in Settings.');
     if (!settings.sheetId)  throw new Error('No Spreadsheet ID in Settings.');
@@ -95,11 +97,22 @@ const Sheets = (() => {
     const rowNum = await findDateRow(token, settings.sheetId, sheetName, dateStr, headerRow);
     if (!rowNum) throw new Error(`Date "${dateStr}" not found in sheet. Make sure the date format matches (e.g. 14-Jun).`);
 
+    let existingRow = [];
+    if (mode === 'add') {
+      const rowData = await sheetsGet(token, settings.sheetId, `${sheetName}!A${rowNum}:Z${rowNum}`);
+      existingRow = (rowData.values || [[]])[0] || [];
+    }
+
     const valueRanges = [];
     for (const [field, col] of Object.entries(colMap)) {
       if (!col || data[field] === undefined || data[field] === '') continue;
-      const cellRef = `${sheetName}!${col.toUpperCase()}${rowNum}`;
-      valueRanges.push({ range: cellRef, values: [[data[field]]] });
+      let value = data[field];
+      if (mode === 'add' && ADDABLE.has(field)) {
+        const colIdx = col.toUpperCase().charCodeAt(0) - 65;
+        const existing = parseFloat(existingRow[colIdx]) || 0;
+        value = Math.round((existing + parseFloat(value)) * 10) / 10;
+      }
+      valueRanges.push({ range: `${sheetName}!${col.toUpperCase()}${rowNum}`, values: [[value]] });
     }
 
     if (!valueRanges.length) return { updated: 0 };

@@ -7,7 +7,7 @@
 // ── State ────────────────────────────────────────────
 let currentDate = todayISO();
 let foods = [];
-let toggles = { weights: false, cardio: false };
+let toggles = { weights: false, cardio: false, medicine: false, addMode: false };
 let selectedUSDA = null;
 let searchDB = 'usda';
 let selectedServingGrams = null;
@@ -543,8 +543,9 @@ document.getElementById('sync-btn').addEventListener('click', async () => {
     sleep:    document.getElementById('sync-sleep').value  || '',
     steps:    document.getElementById('sync-steps').value  || '',
     water:    document.getElementById('sync-water').value  || '',
-    weights:  toggles.weights ? 'Yes' : '',
-    cardio:   toggles.cardio  ? 'Yes' : '',
+    weights:  toggles.weights  ? 'Yes' : '',
+    cardio:   toggles.cardio   ? 'Yes' : '',
+    medicine: toggles.medicine ? 'Yes' : '',
   };
 
   // Remove empty fields
@@ -560,7 +561,7 @@ document.getElementById('sync-btn').addEventListener('click', async () => {
   try {
     const dateStr = formatDateForSheet(currentDate);
     btn.textContent = 'Writing to sheet…';
-    const result = await Sheets.syncDay(dateStr, data);
+    const result = await Sheets.syncDay(dateStr, data, toggles.addMode ? 'add' : 'replace');
     setStatus('sync-status', `Synced ${result.updated} cell(s) for ${dateStr}.`, 'success');
   } catch (e) {
     setStatus('sync-status', e.message || 'Sync failed. Check Settings.', 'error');
@@ -581,8 +582,9 @@ const COL_FIELDS = [
   { key: 'water',    label: 'Water' },
   { key: 'weight',   label: 'Weight' },
   { key: 'weights',  label: 'Weights (gym)' },
-  { key: 'cardio',   label: 'Cardio' },
-  { key: 'sleep',    label: 'Sleep' },
+  { key: 'cardio',    label: 'Cardio' },
+  { key: 'medicine',  label: 'Medicine' },
+  { key: 'sleep',     label: 'Sleep' },
   { key: 'steps',    label: 'Steps' },
 ];
 

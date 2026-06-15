@@ -69,6 +69,7 @@ const Storage = (() => {
         weight: 'I',
         weights: 'L',
         cardio: 'M',
+        medicine: '',
         sleep: 'Q',
         steps: 'R',
       }
