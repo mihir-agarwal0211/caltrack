@@ -571,6 +571,65 @@ document.getElementById('sync-btn').addEventListener('click', async () => {
   btn.textContent = 'Sync to Google Sheet';
 });
 
+// ── Check sheet status ────────────────────────────────
+document.getElementById('check-status-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('check-status-btn');
+  const statusEl = document.getElementById('sheet-status');
+  btn.disabled = true; btn.textContent = 'Checking…';
+  statusEl.style.display = 'none';
+  try {
+    const dateStr = formatDateForSheet(currentDate);
+    const values = await Sheets.checkStatus(dateStr);
+    if (!values) {
+      statusEl.innerHTML = `Date not found in sheet.`;
+    } else {
+      const keys = Object.keys(values);
+      statusEl.innerHTML = keys.length
+        ? keys.map(k => `<span style="margin-right:12px"><strong>${k}:</strong> ${values[k]}</span>`).join('')
+        : `Row exists but all cells empty.`;
+    }
+    statusEl.style.display = 'block';
+  } catch (e) {
+    statusEl.innerHTML = e.message;
+    statusEl.style.display = 'block';
+  }
+  btn.disabled = false; btn.textContent = 'Check Sheet';
+});
+
+document.getElementById('push-log-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('push-log-btn');
+  btn.disabled = true; btn.textContent = 'Pushing…';
+  setStatus('sync-status', '', '');
+  try {
+    const dateStr = formatDateForSheet(currentDate);
+    if (!foods.length) throw new Error('No food logged for this date to push.');
+    const count = await Sheets.pushFoodLog(dateStr, foods);
+    setStatus('sync-status', `Pushed ${count} food item(s) for ${dateStr}.`, 'success');
+  } catch (e) {
+    setStatus('sync-status', e.message || 'Push failed.', 'error');
+  }
+  btn.disabled = false; btn.textContent = 'Push Food Log';
+});
+
+document.getElementById('pull-log-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('pull-log-btn');
+  btn.disabled = true; btn.textContent = 'Pulling…';
+  setStatus('sync-status', '', '');
+  try {
+    const dateStr = formatDateForSheet(currentDate);
+    const items = await Sheets.pullFoodLog(dateStr);
+    if (!items.length) throw new Error(`No food items found in sheet for ${dateStr}.`);
+    Storage.setDayLog(currentDate, items);
+    foods = items;
+    renderFoodLog();
+    updateMacros();
+    setStatus('sync-status', `Pulled ${items.length} item(s) for ${dateStr}.`, 'success');
+  } catch (e) {
+    setStatus('sync-status', e.message || 'Pull failed.', 'error');
+  }
+  btn.disabled = false; btn.textContent = 'Pull Food Log';
+});
+
 // ── Settings ──────────────────────────────────────────
 const COL_FIELDS = [
   { key: 'date',     label: 'Date column' },

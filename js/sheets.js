@@ -190,5 +190,72 @@ const Sheets = (() => {
     return recipes;
   }
 
-  return { syncDay, pushRecipes, pullRecipes };
+  async function checkStatus(dateStr) {
+    const settings = Storage.getSettings();
+    if (!settings.clientId) throw new Error('No Google OAuth Client ID in Settings.');
+    if (!settings.sheetId)  throw new Error('No Spreadsheet ID in Settings.');
+
+    await loadGIS();
+    const token = await requestToken(settings.clientId);
+
+    const sheetName = settings.sheetName || 'Daily Tracker';
+    const headerRow = parseInt(settings.headerRow) || 2;
+    const colMap = settings.colMap || {};
+
+    const rowNum = await findDateRow(token, settings.sheetId, sheetName, dateStr, headerRow);
+    if (!rowNum) return null;
+
+    const rowData = await sheetsGet(token, settings.sheetId, `${sheetName}!A${rowNum}:Z${rowNum}`);
+    const row = (rowData.values || [[]])[0] || [];
+
+    const result = {};
+    for (const [field, col] of Object.entries(colMap)) {
+      if (!col) continue;
+      const idx = col.toUpperCase().charCodeAt(0) - 65;
+      if (row[idx] !== undefined && row[idx] !== '') result[field] = row[idx];
+    }
+    return result;
+  }
+
+  async function pushFoodLog(dateStr, foods) {
+    const settings = Storage.getSettings();
+    if (!settings.clientId) throw new Error('No Google OAuth Client ID in Settings.');
+    if (!settings.sheetId)  throw new Error('No Spreadsheet ID in Settings.');
+
+    await loadGIS();
+    const token = await requestToken(settings.clientId);
+
+    const data = await sheetsGet(token, settings.sheetId, 'Food Log!A2:G5000').catch(() => ({ values: [] }));
+    const existing = (data.values || []).filter(r => (r[0] || '').trim() !== dateStr.trim());
+    const newRows = foods.map(f => [dateStr, f.name, f.cal, f.pro, f.fat, f.carb, f.fibre || 0]);
+    const allRows = [...existing, ...newRows];
+    const header = [['Date', 'Name', 'Cal', 'Pro', 'Fat', 'Carb', 'Fibre']];
+
+    await sheetsClear(token, settings.sheetId, 'Food Log!A1:G5000');
+    await sheetsUpdate(token, settings.sheetId, `Food Log!A1:G${1 + allRows.length}`, [...header, ...allRows]);
+    return newRows.length;
+  }
+
+  async function pullFoodLog(dateStr) {
+    const settings = Storage.getSettings();
+    if (!settings.clientId) throw new Error('No Google OAuth Client ID in Settings.');
+    if (!settings.sheetId)  throw new Error('No Spreadsheet ID in Settings.');
+
+    await loadGIS();
+    const token = await requestToken(settings.clientId);
+
+    const data = await sheetsGet(token, settings.sheetId, 'Food Log!A2:G5000');
+    return (data.values || [])
+      .filter(r => (r[0] || '').trim() === dateStr.trim())
+      .map(([, name, cal, pro, fat, carb, fibre]) => ({
+        name:  name || '',
+        cal:   parseFloat(cal)   || 0,
+        pro:   parseFloat(pro)   || 0,
+        fat:   parseFloat(fat)   || 0,
+        carb:  parseFloat(carb)  || 0,
+        fibre: parseFloat(fibre) || 0,
+      }));
+  }
+
+  return { syncDay, pushRecipes, pullRecipes, checkStatus, pushFoodLog, pullFoodLog };
 })();

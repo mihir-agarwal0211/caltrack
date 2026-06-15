@@ -253,8 +253,18 @@
         </div>
 
         <div class="sync-summary card-inner" id="sync-summary"></div>
+        <div class="card-inner" id="sheet-status" style="display:none; margin-top:0.5rem; font-size:12px; color:var(--text-muted)"></div>
+        <div style="display:flex; gap:8px; margin-top:0.75rem">
+          <button class="btn-secondary" id="check-status-btn">Check Sheet</button>
+        </div>
 
-        <button class="btn-primary btn-sync" id="sync-btn">Sync to Google Sheet</button>
+        <button class="btn-primary btn-sync" id="sync-btn" style="margin-top:1rem">Sync to Google Sheet</button>
+
+        <div class="recipe-sheet-actions" style="margin-top:0.75rem">
+          <button class="btn-secondary" id="push-log-btn">Push Food Log</button>
+          <button class="btn-secondary" id="pull-log-btn">Pull Food Log</button>
+        </div>
+        <p class="hint" style="margin-top:6px">Food Log tab stores individual items. Pull replaces local log for this date.</p>
         <p id="sync-status" class="status-msg"></p>
       </div>
     </section>
