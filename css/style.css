@@ -433,6 +433,8 @@ select option { background: var(--bg-card); }
 
 .btn-secondary:hover { border-color: var(--border-focus); color: var(--text); }
 
+.recipe-sheet-actions { display: flex; gap: 8px; margin-top: 1.5rem; }
+
 .btn-sync {
   width: 100%;
   font-size: 14px;

@@ -107,5 +107,75 @@ const Sheets = (() => {
     return { updated: result.totalUpdatedCells || valueRanges.length };
   }
 
-  return { syncDay };
+  async function sheetsClear(token, sheetId, range) {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}:clear`;
+    const res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(`Sheets clear ${res.status}: ${err?.error?.message || res.statusText}`);
+    }
+    return res.json();
+  }
+
+  async function sheetsUpdate(token, sheetId, range, values) {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ range, values }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(`Sheets update ${res.status}: ${err?.error?.message || res.statusText}`);
+    }
+    return res.json();
+  }
+
+  async function pushRecipes(recipes) {
+    const settings = Storage.getSettings();
+    if (!settings.clientId) throw new Error('No Google OAuth Client ID in Settings.');
+    if (!settings.sheetId)  throw new Error('No Spreadsheet ID in Settings.');
+
+    await loadGIS();
+    const token = await requestToken(settings.clientId);
+
+    const keys = Object.keys(recipes);
+    await sheetsClear(token, settings.sheetId, 'Recipes!A2:G1000');
+    const values = [
+      ['Name', 'Per (g)', 'Calories', 'Protein', 'Fat', 'Carbs', 'Fibre'],
+      ...keys.map(k => {
+        const r = recipes[k];
+        return [k, r.per, r.cal_per, r.pro_per, r.fat_per, r.carb_per, r.fibre_per || 0];
+      }),
+    ];
+    await sheetsUpdate(token, settings.sheetId, `Recipes!A1:G${values.length}`, values);
+    return keys.length;
+  }
+
+  async function pullRecipes() {
+    const settings = Storage.getSettings();
+    if (!settings.clientId) throw new Error('No Google OAuth Client ID in Settings.');
+    if (!settings.sheetId)  throw new Error('No Spreadsheet ID in Settings.');
+
+    await loadGIS();
+    const token = await requestToken(settings.clientId);
+
+    const data = await sheetsGet(token, settings.sheetId, 'Recipes!A2:G500');
+    const recipes = {};
+    for (const row of (data.values || [])) {
+      const [name, per, cal, pro, fat, carb, fibre] = row;
+      if (!name || !cal) continue;
+      recipes[name] = {
+        per:      parseFloat(per)   || 100,
+        cal_per:  parseFloat(cal)   || 0,
+        pro_per:  parseFloat(pro)   || 0,
+        fat_per:  parseFloat(fat)   || 0,
+        carb_per: parseFloat(carb)  || 0,
+        fibre_per: parseFloat(fibre) || 0,
+      };
+    }
+    return recipes;
+  }
+
+  return { syncDay, pushRecipes, pullRecipes };
 })();

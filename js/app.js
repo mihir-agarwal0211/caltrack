@@ -463,6 +463,38 @@ function deleteRecipe(name) {
   renderRecipeList();
 }
 
+// ── Recipe sheet sync ─────────────────────────────────
+document.getElementById('push-recipes-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('push-recipes-btn');
+  btn.disabled = true; btn.textContent = 'Pushing…';
+  setStatus('recipe-sheet-status', '', '');
+  try {
+    const count = await Sheets.pushRecipes(Storage.getRecipes());
+    setStatus('recipe-sheet-status', `Pushed ${count} recipe(s) to sheet.`, 'success');
+  } catch (e) {
+    setStatus('recipe-sheet-status', e.message || 'Push failed. Check Settings.', 'error');
+  }
+  btn.disabled = false; btn.textContent = 'Push to Sheet';
+});
+
+document.getElementById('pull-recipes-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('pull-recipes-btn');
+  btn.disabled = true; btn.textContent = 'Pulling…';
+  setStatus('recipe-sheet-status', '', '');
+  try {
+    const recipes = await Sheets.pullRecipes();
+    const count = Object.keys(recipes).length;
+    if (!count) throw new Error('No recipes found in sheet. Make sure the tab is named "Recipes".');
+    Storage.setRecipes(recipes);
+    populateRecipePicker();
+    renderRecipeList();
+    setStatus('recipe-sheet-status', `Pulled ${count} recipe(s) from sheet.`, 'success');
+  } catch (e) {
+    setStatus('recipe-sheet-status', e.message || 'Pull failed. Check Settings.', 'error');
+  }
+  btn.disabled = false; btn.textContent = 'Pull from Sheet';
+});
+
 // ── Sync tab ──────────────────────────────────────────
 document.querySelectorAll('.toggle-btn').forEach(btn => {
   btn.addEventListener('click', () => {
