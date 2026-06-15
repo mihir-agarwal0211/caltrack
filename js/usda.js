@@ -67,20 +67,26 @@ const USDA = (() => {
 
   async function searchOFF(query, pageSize = 7) {
     const params = new URLSearchParams({
-      q: query,
+      search_terms: query,
+      search_simple: 1,
+      action: 'process',
+      sort_by: 'unique_scans_n',
+      json: 1,
       page_size: pageSize,
-      fields: 'product_name,brands,nutriments,serving_quantity',
     });
-    const res = await fetch(`https://api.mihiragarwal.com/off/search?${params}`);
+    const res = await fetch(`https://api.mihiragarwal.com/off/cgi/search.pl?${params}`);
     if (!res.ok) throw new Error(`Open Food Facts API error ${res.status}`);
     const data = await res.json();
-    return (data.hits || [])
+    return (data.products || [])
       .filter(p => p.product_name && p.nutriments?.['energy-kcal_100g'] != null)
       .slice(0, pageSize)
       .map(p => {
         const n = p.nutriments;
         const name = p.brands ? `${p.product_name} — ${p.brands}` : p.product_name;
         const servingGrams = parseFloat(p.serving_quantity) || null;
+        const servingLabel = p.serving_size
+          ? p.serving_size.replace(/\s*\([\d.]+\s*g\)/i, '').trim()
+          : null;
         return {
           fdcId: null,
           name,
@@ -91,7 +97,7 @@ const USDA = (() => {
           fibre: Math.round((n['fiber_100g']           || 0) * 10) / 10,
           per:   100,
           source: 'off',
-          servingLabel: servingGrams ? '1 serving' : null,
+          servingLabel,
           servingGrams,
         };
       });
