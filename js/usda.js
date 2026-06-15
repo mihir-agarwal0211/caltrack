@@ -81,6 +81,7 @@ const USDA = (() => {
         const name = p.brands ? `${p.product_name} — ${p.brands}` : p.product_name;
         return {
           fdcId: null,
+          thumb: p.image_front_thumb_url || null,
           name,
           cal:   Math.round(n['energy-kcal_100g'] || 0),
           pro:   Math.round((n['proteins_100g']       || 0) * 10) / 10,

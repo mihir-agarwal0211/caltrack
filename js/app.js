@@ -202,8 +202,11 @@ async function doUSDASearch({ allowOFF = true } = {}) {
 
     searchResultsEl.innerHTML = results.map((f, i) => `
       <div class="search-result-item" onclick="selectUSDA(${i})" data-idx="${i}">
-        <div class="result-name">${f.name}</div>
-        <div class="result-macros">${f.cal} kcal · ${f.pro}g P · ${f.fat}g F · ${f.carb}g C per 100g</div>
+        ${f.thumb ? `<img class="result-thumb" src="${f.thumb}" alt="" loading="lazy" />` : ''}
+        <div>
+          <div class="result-name">${f.name}</div>
+          <div class="result-macros">${f.cal} kcal · ${f.pro}g P · ${f.fat}g F · ${f.carb}g C per 100g</div>
+        </div>
       </div>
     `).join('');
     searchResultsEl._results = results;
