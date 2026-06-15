@@ -71,7 +71,7 @@ const USDA = (() => {
       page_size: pageSize,
       fields: 'product_name,brands,nutriments,serving_quantity',
     });
-    const res = await fetch(`https://search.openfoodfacts.org/search?${params}`);
+    const res = await fetch(`https://api.mihiragarwal.com/off/search?${params}`);
     if (!res.ok) throw new Error(`Open Food Facts API error ${res.status}`);
     const data = await res.json();
     return (data.hits || [])
