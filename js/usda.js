@@ -79,13 +79,8 @@ const USDA = (() => {
       .map(p => {
         const n = p.nutriments;
         const name = p.brands ? `${p.product_name} — ${p.brands}` : p.product_name;
-        const servingGrams = parseFloat(p.serving_quantity) || null;
-        const servingLabel = p.serving_size
-          ? p.serving_size.replace(/\s*\([\d.]+\s*g\)/i, '').trim()
-          : null;
         return {
           fdcId: null,
-          code: p.code,
           name,
           cal:   Math.round(n['energy-kcal_100g'] || 0),
           pro:   Math.round((n['proteins_100g']       || 0) * 10) / 10,
@@ -94,25 +89,9 @@ const USDA = (() => {
           fibre: Math.round((n['fiber_100g']           || 0) * 10) / 10,
           per:   100,
           source: 'off',
-          servingLabel,
-          servingGrams,
         };
       });
   }
 
-  async function getOFFMeasures(code) {
-    const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    const p = data.product;
-    if (!p) return [];
-    const grams = parseFloat(p.serving_quantity);
-    if (!grams) return [];
-    const label = p.serving_size
-      ? p.serving_size.replace(/\s*\([\d.]+\s*g\)/i, '').trim()
-      : '1 serving';
-    return [{ label, grams }];
-  }
-
-  return { search, getFoodMeasures, searchOFF, getOFFMeasures };
+  return { search, getFoodMeasures, searchOFF };
 })();
