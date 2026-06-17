@@ -563,7 +563,9 @@ document.getElementById('sync-btn').addEventListener('click', async () => {
     const dateStr = formatDateForSheet(currentDate);
     btn.textContent = 'Writing to sheet…';
     const result = await Sheets.syncDay(dateStr, data, toggles.addMode ? 'add' : 'replace');
-    setStatus('sync-status', `Synced ${result.updated} cell(s) for ${dateStr}.`, 'success');
+    btn.textContent = 'Syncing food log…';
+    const logCount = await Sheets.pushFoodLog(dateStr, foods);
+    setStatus('sync-status', `Synced ${result.updated} cell(s) + ${logCount} food item(s) for ${dateStr}.`, 'success');
   } catch (e) {
     setStatus('sync-status', e.message || 'Sync failed. Check Settings.', 'error');
   }
@@ -603,9 +605,8 @@ document.getElementById('push-log-btn').addEventListener('click', async () => {
   setStatus('sync-status', '', '');
   try {
     const dateStr = formatDateForSheet(currentDate);
-    if (!foods.length) throw new Error('No food logged for this date to push.');
     const count = await Sheets.pushFoodLog(dateStr, foods);
-    setStatus('sync-status', `Pushed ${count} food item(s) for ${dateStr}.`, 'success');
+    setStatus('sync-status', foods.length ? `Pushed ${count} food item(s) for ${dateStr}.` : `Cleared food log for ${dateStr} in sheet.`, 'success');
   } catch (e) {
     setStatus('sync-status', e.message || 'Push failed.', 'error');
   }

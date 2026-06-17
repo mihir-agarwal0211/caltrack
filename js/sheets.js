@@ -130,7 +130,7 @@ const Sheets = (() => {
 
   async function sheetsClear(token, sheetId, range) {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}:clear`;
-    const res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetchWithTimeout(url, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(`Sheets clear ${res.status}: ${err?.error?.message || res.statusText}`);
@@ -140,7 +140,7 @@ const Sheets = (() => {
 
   async function sheetsUpdate(token, sheetId, range, values) {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ range, values }),
