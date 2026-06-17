@@ -35,9 +35,17 @@ const Sheets = (() => {
     });
   }
 
+  function fetchWithTimeout(url, options = {}, ms = 20000) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), ms);
+    return fetch(url, { ...options, signal: controller.signal })
+      .then(r => { clearTimeout(id); return r; })
+      .catch(e => { clearTimeout(id); throw e.name === 'AbortError' ? new Error('Request timed out. Check your connection and try again.') : e; });
+  }
+
   async function sheetsGet(token, sheetId, range) {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}`;
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       headers: { Authorization: `Bearer ${token}` }
     });
     if (!res.ok) {
@@ -49,7 +57,7 @@ const Sheets = (() => {
 
   async function sheetsBatchUpdate(token, sheetId, valueRanges) {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchUpdate`;
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
